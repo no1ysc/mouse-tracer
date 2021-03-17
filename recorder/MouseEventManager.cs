@@ -26,11 +26,8 @@ namespace recorder
 
         //string prev;
         //string current;
-        public MouseEventManager(string filePath)
+        public MouseEventManager()
         {
-            streamWriter = new StreamWriter(filePath);
-            startTime = DateTime.Now;
-
             hook = Hook.GlobalEvents();
 
             hook.MouseClick += GrobalEventMouseClick;
@@ -44,6 +41,23 @@ namespace recorder
             Close();
         }
 
+        public int CurrentX { get; private set; } = 0;
+        public int CurrentY { get; private set; } = 0;
+
+        public void Start(string filePath)
+        {
+            streamWriter = new StreamWriter(filePath);
+            startTime = DateTime.Now;
+            IsRecording = true;
+        }
+
+        public void Stop()
+        {
+            IsRecording = false;
+            streamWriter.Close();
+        }
+
+
         public void Close()
         {
             hook.MouseClick -= GrobalEventMouseClick;
@@ -56,11 +70,18 @@ namespace recorder
         private StreamWriter streamWriter;
         private IKeyboardMouseEvents hook;
         private DateTime startTime;
+        public bool IsRecording { get; private set; } = false;
 
         private void Logging(MouseEvent me, int x, int y)
         {
-            long deltaAfterStartingMiliseconds = DateTime.Now.Ticks - startTime.Ticks;
-            streamWriter.WriteLine($"{deltaAfterStartingMiliseconds}, {me}, {x}, {y}");
+            CurrentX = x;
+            CurrentY = y;
+
+            if (IsRecording) 
+            {
+                long deltaAfterStartingMiliseconds = DateTime.Now.Ticks - startTime.Ticks;
+                streamWriter.WriteLine($"{deltaAfterStartingMiliseconds}, {me}, {x}, {y}");
+            }
         }
 
         private void GrobalEventMouseMove(object sender, MouseEventArgs e)
