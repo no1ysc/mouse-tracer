@@ -29,7 +29,7 @@ namespace recorder
         }
 
         private VideoFileWriter vfw;
-        private MouseEventManager mem;
+        private MouseEventManager mem = new MouseEventManager();
         Bitmap img = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
         Graphics g;
         string basePath = "";
@@ -53,6 +53,7 @@ namespace recorder
             #region writing screen
             g = Graphics.FromImage(img);
             g.CopyFromScreen(0, 0, 0, 0, img.Size);
+            g.DrawIcon(Properties.Resources.mouse, mem.CurrentX, mem.CurrentY);
             pictureBox1.Image = img;
 
             if (vfw != null && vfw.IsOpen)
@@ -80,6 +81,7 @@ namespace recorder
             string fileNameBase = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
 
             #region writing screen
+            // 여기 셋팅 잘못하면 파일 오픈 안됨.
             vfw = new VideoFileWriter()
             {
                 Width = Screen.PrimaryScreen.Bounds.Width,
@@ -93,7 +95,7 @@ namespace recorder
             #endregion
 
             #region writing mouse
-            mem = new MouseEventManager(basePath + fileNameBase + ".mtr");
+            mem.Start(basePath + fileNameBase + ".mtr");
             #endregion
         }
 
@@ -103,7 +105,7 @@ namespace recorder
             btnStop.Enabled = false;
 
             vfw.Close();
-            mem.Close();
+            mem.Stop();
         }
 
         private void Form1_Load(object sender, EventArgs e)
