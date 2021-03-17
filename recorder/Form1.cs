@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,25 +29,45 @@ namespace recorder
         }
 
         private VideoFileWriter vfw;
+        private MouseEventManager mem;
         Bitmap img = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
         Graphics g;
-        string savePath = @"d:\임시전송\a.mp4";
+        string basePath = "";
         long tickCount = 0;
+
+        private void prepareSavePath()
+        {
+            basePath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\mouse-tracer\\";
+            
+            var di = new DirectoryInfo(basePath);
+            if (!di.Exists)
+            {
+                di.Create();
+            }
+        }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
             tickCount++;
+
+            #region writing screen
             g = Graphics.FromImage(img);
             g.CopyFromScreen(0, 0, 0, 0, img.Size);
             pictureBox1.Image = img;
 
-            if (vfw != null && vfw.IsOpen) 
+            if (vfw != null && vfw.IsOpen)
             {
                 vfw.WriteVideoFrame(img);
-                if (tickCount % 1000 == 0)
-                {
-                    vfw.Flush();
-                }
+            }
+            #endregion
+
+            #region writing mouse
+
+            #endregion
+
+            if (tickCount % 1000 == 0)
+            {
+                vfw.Flush();
             }
         }
 
@@ -55,6 +76,10 @@ namespace recorder
             btnRecording.Enabled = false;
             btnStop.Enabled = true;
 
+            prepareSavePath();
+            string fileNameBase = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
+
+            #region writing screen
             vfw = new VideoFileWriter()
             {
                 Width = Screen.PrimaryScreen.Bounds.Width,
@@ -64,7 +89,12 @@ namespace recorder
                 VideoCodec = VideoCodec.Mpeg4
             };
 
-            vfw.Open(savePath);
+            vfw.Open(basePath + fileNameBase + ".mp4");
+            #endregion
+
+            #region writing mouse
+            mem = new MouseEventManager(basePath + fileNameBase + ".mtr");
+            #endregion
         }
 
         private void btnStop_Click(object sender, EventArgs e)
@@ -73,6 +103,7 @@ namespace recorder
             btnStop.Enabled = false;
 
             vfw.Close();
+            mem.Close();
         }
 
         private void Form1_Load(object sender, EventArgs e)
