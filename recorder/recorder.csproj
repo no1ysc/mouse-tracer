@@ -35,6 +35,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -82,6 +83,12 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Accord.Audio">
+      <Version>3.8.2-alpha</Version>
+    </PackageReference>
+    <PackageReference Include="Accord.DirectSound">
+      <Version>3.8.2-alpha</Version>
+    </PackageReference>
     <PackageReference Include="Accord.Video.FFMPEG">
       <Version>3.8.2-alpha</Version>
     </PackageReference>

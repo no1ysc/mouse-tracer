@@ -64,7 +64,10 @@ namespace recorder
             hook.MouseDoubleClick -= GrobalEventMouseDoubleClick;
             hook.MouseWheel -= GrobalEventMouseWheel;
             hook.MouseMove -= GrobalEventMouseMove;
-            streamWriter.Close();
+            if (streamWriter != null)
+            {
+                streamWriter.Close();
+            }
         }
 
         private StreamWriter streamWriter;
