@@ -1,4 +1,5 @@
 ﻿using Accord.Audio;
+using Accord.Audio.Filters;
 using Accord.DirectSound;
 using Accord.Math;
 using Accord.Video;
@@ -176,7 +177,13 @@ namespace recorder
             {
                 if (IsRecording)
                 {
+                    HighPassFilter hpf = new HighPassFilter(200, AudioSampleRate);
+                    LowPassFilter lpf = new LowPassFilter(20000, AudioSampleRate);
+                    //WaveRectifier waveRectifier = new WaveRectifier(true);
+                    var aa = sender as AudioCaptureDevice;
                     vfw.WriteAudioFrame(e.Signal);
+                    //vfw.WriteAudioFrame(lpf.Apply(hpf.Apply(e.Signal)));
+                    //vfw.WriteAudioFrame(new EnvelopeFilter(0.3f).Apply(e.Signal));
                 }
             }
         }
