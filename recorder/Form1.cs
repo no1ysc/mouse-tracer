@@ -79,19 +79,34 @@ namespace recorder
             vfw.VideoOptions["tune"] = "zerolatency";
             vfw.VideoOptions["x264opts"] = "no-mbtree:sliced-threads:sync-lookahead=0";
 
-            vfw.AudioBitRate = VideoAudioBitRate;
-            vfw.AudioCodec = AudioCodec.Aac;
-            vfw.AudioLayout = audioMixer.NumberOfChannels == 1 ? AudioLayout.Mono : AudioLayout.Stereo;
-            vfw.FrameSize = AudioDesiredFrameSize;
-            vfw.SampleRate = audioMixer.SampleRate;
+            if (audioMixer != null)
+            {
+                vfw.AudioBitRate = VideoAudioBitRate;
+                vfw.AudioCodec = AudioCodec.Aac;
+                vfw.AudioLayout = audioMixer.NumberOfChannels == 1 ? AudioLayout.Mono : AudioLayout.Stereo;
+                vfw.FrameSize = AudioDesiredFrameSize;
+                vfw.SampleRate = audioMixer.SampleRate;
+            }
         }
 
         private void InitAudioDevices()
         {
-            //var micDevices = new AudioDeviceCollection(AudioDeviceCategory.Capture).ToArray();
             var audioDevices = new List<AudioCaptureDevice>();
 
-            var outputDeviceInfo = new AudioDeviceCollection(AudioDeviceCategory.Output).Default;
+            //foreach(var outputDeviceInfo in new AudioDeviceCollection(AudioDeviceCategory.Output))
+            //{
+            //    var outputDevice = new AudioCaptureDevice(outputDeviceInfo.Guid);
+            //    Console.WriteLine(outputDeviceInfo.Description);
+            //    outputDevice.Format = AudioSampleFormat;
+            //    outputDevice.SampleRate = AudioSampleRate;
+            //    outputDevice.DesiredFrameSize = AudioDesiredFrameSize;
+            //    outputDevice.AudioSourceError += AudioSourceError;
+            //    outputDevice.Start();
+
+            //    audioDevices.Add(outputDevice);
+            //}
+
+            AudioDeviceInfo outputDeviceInfo = new AudioDeviceCollection(AudioDeviceCategory.Capture).Default;
             if (outputDeviceInfo != null)
             {
                 var outputDevice = new AudioCaptureDevice(outputDeviceInfo.Guid);
@@ -104,20 +119,20 @@ namespace recorder
                 audioDevices.Add(outputDevice);
             }
 
-            var micDeviceInfo = new AudioDeviceCollection(AudioDeviceCategory.Output).Default;
-            if (micDeviceInfo != null)
-            {
-                var micDevice = new AudioCaptureDevice(micDeviceInfo.Guid);
-                micDevice.Format = AudioSampleFormat;
-                micDevice.SampleRate = AudioSampleRate;
-                micDevice.DesiredFrameSize = AudioDesiredFrameSize;
-                micDevice.AudioSourceError += AudioSourceError;
-                micDevice.Start();
+            //var micDeviceInfo = new AudioDeviceCollection(AudioDeviceCategory.Output).Default;
+            //if (micDeviceInfo != null)
+            //{
+            //    var micDevice = new AudioCaptureDevice(micDeviceInfo.Guid);
+            //    micDevice.Format = AudioSampleFormat;
+            //    micDevice.SampleRate = AudioSampleRate;
+            //    micDevice.DesiredFrameSize = AudioDesiredFrameSize;
+            //    micDevice.AudioSourceError += AudioSourceError;
+            //    micDevice.Start();
 
-                audioDevices.Add(micDevice);
-            }
+            //    audioDevices.Add(micDevice);
+            //}
 
-            
+
             if (audioDevices.Count > 0)
             {
                 audioMixer = new AudioSourceMixer(audioDevices);
@@ -131,6 +146,7 @@ namespace recorder
         {
             g = Graphics.FromImage(eventArgs.Frame);
             g.DrawIcon(Properties.Resources.mouse, mem.CurrentX, mem.CurrentY);
+            lastFrame = null;
             lastFrame = eventArgs.Frame.Clone(new Rectangle(0, 0, eventArgs.Frame.Width, eventArgs.Frame.Height), eventArgs.Frame.PixelFormat);
             pictureBox1.Image = lastFrame;
 
@@ -145,7 +161,10 @@ namespace recorder
 
                     TimeSpan timestamp = currentFrameTime - RecordingStartTime;
                     if (timestamp > TimeSpan.Zero)
-                        vfw.WriteVideoFrame(eventArgs.Frame, timestamp);
+                    {
+                        //vfw.WriteVideoFrame(eventArgs.Frame, timestamp);
+                        vfw.WriteVideoFrame(eventArgs.Frame);
+                    }
                 }
             }
 
