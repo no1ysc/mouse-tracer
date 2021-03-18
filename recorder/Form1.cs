@@ -42,6 +42,7 @@ namespace recorder
         AudioSourceMixer audioMixer;
 
         private DateTime RecordingStartTime = DateTime.MinValue;
+        private long frameCount = 0;
         private Object syncObj = new Object();
 
 
@@ -55,6 +56,16 @@ namespace recorder
 
             //InitVideoFileWriter();
         }
+
+        ~Form1()
+        {
+            if (vfw != null)
+            {
+                vfw.Flush();
+                vfw.Close();
+            }
+        }
+
 
         private void InitScreenStream()
         {
@@ -145,46 +156,49 @@ namespace recorder
 
         private void ScreenStream_NewFrame(object sender, Accord.Video.NewFrameEventArgs eventArgs)
         {
-            g = Graphics.FromImage(eventArgs.Frame);
-            g.DrawIcon(Properties.Resources.mouse, mem.CurrentX, mem.CurrentY);
-            lastFrame = null;
-            lastFrame = eventArgs.Frame.Clone(new Rectangle(0, 0, eventArgs.Frame.Width, eventArgs.Frame.Height), eventArgs.Frame.PixelFormat);
-            pictureBox1.Image = lastFrame;
+            //g = Graphics.FromImage(eventArgs.Frame);
+            //g.DrawIcon(Properties.Resources.mouse, mem.CurrentX, mem.CurrentY);
+            //lastFrame = null;
+            //lastFrame = eventArgs.Frame.Clone(new Rectangle(0, 0, eventArgs.Frame.Width, eventArgs.Frame.Height), eventArgs.Frame.PixelFormat);
+            //pictureBox1.Image = lastFrame;
 
             DateTime currentFrameTime = eventArgs.CaptureFinished;
+            frameCount++;
 
-            lock (syncObj) // Save the frame to the video file.
+            if (IsRecording)
             {
-                if (IsRecording)
-                {
-                    if (RecordingStartTime == DateTime.MinValue)
-                        RecordingStartTime = DateTime.Now;
+                if (RecordingStartTime == DateTime.MinValue)
+                    RecordingStartTime = DateTime.Now;
 
-                    TimeSpan timestamp = currentFrameTime - RecordingStartTime;
-                    if (timestamp > TimeSpan.Zero)
+                TimeSpan timestamp = currentFrameTime - RecordingStartTime;
+                if (timestamp > TimeSpan.Zero)
+                {
+                    lock (syncObj) // Save the frame to the video file.
                     {
                         //vfw.WriteVideoFrame(eventArgs.Frame, timestamp);
                         vfw.WriteVideoFrame(eventArgs.Frame);
                     }
                 }
-            }
 
+                if (frameCount % VideoFrameRate == 0)
+                {
+                    vfw.Flush();
+                }
+            }
         }
 
         private void audioDevice_NewFrame(object sender, Accord.Audio.NewFrameEventArgs e)
         {
-            lock (syncObj) // Save the frame to the video file.
+            if (IsRecording)
             {
-                if (IsRecording)
+                HighPassFilter hpf = new HighPassFilter(200, AudioSampleRate);
+                LowPassFilter lpf = new LowPassFilter(20000, AudioSampleRate);
+                Signal signal = lpf.Apply(hpf.Apply(e.Signal));
+
+                lock (syncObj) // Save the frame to the video file.
                 {
-                    HighPassFilter hpf = new HighPassFilter(200, AudioSampleRate);
-                    LowPassFilter lpf = new LowPassFilter(20000, AudioSampleRate);
-                    //WaveRectifier waveRectifier = new WaveRectifier(true);
-                    var aa = sender as AudioCaptureDevice;
-                    vfw.WriteAudioFrame(e.Signal);
-                    //vfw.WriteAudioFrame(lpf.Apply(hpf.Apply(e.Signal)));
-                    //vfw.WriteAudioFrame(new EnvelopeFilter(0.3f).Apply(e.Signal));
-                }
+                    vfw.WriteAudioFrame(signal);
+                }                                   
             }
         }
         private void AudioSourceError(object sender, AudioSourceErrorEventArgs e)
@@ -197,17 +211,6 @@ namespace recorder
             string msg = String.Format($"{source.Source} Error.");
             MessageBox.Show(msg, source.Source, MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
         }
-
-        ~Form1()
-        {
-            if (vfw != null && vfw.IsOpen)
-            {
-                vfw.Flush();
-                vfw.Close();
-            }
-        }
-
-
 
         private void prepareSavePath()
         {
@@ -228,6 +231,7 @@ namespace recorder
             }
 
             RecordingStartTime = DateTime.MinValue;
+            frameCount = 0;
 
             prepareSavePath();
             string fileNameBase = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
