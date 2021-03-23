@@ -64,10 +64,7 @@ namespace recorder
             hook.MouseDoubleClick -= GrobalEventMouseDoubleClick;
             hook.MouseWheel -= GrobalEventMouseWheel;
             hook.MouseMove -= GrobalEventMouseMove;
-            if (streamWriter != null)
-            {
-                streamWriter.Close();
-            }
+            streamWriter.Close();
         }
 
         private StreamWriter streamWriter;
@@ -82,9 +79,8 @@ namespace recorder
 
             if (IsRecording) 
             {
-                TimeSpan timestamp = DateTime.Now - startTime;
-                //long deltaAfterStartingMiliseconds = DateTime.Now.Ticks - startTime.Ticks;
-                streamWriter.WriteLine($"{timestamp}, {me}, {x}, {y}");
+                long deltaAfterStartingMiliseconds = DateTime.Now.Ticks - startTime.Ticks;
+                streamWriter.WriteLine($"{deltaAfterStartingMiliseconds}, {me}, {x}, {y}");
             }
         }
 
