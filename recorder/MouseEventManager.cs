@@ -82,8 +82,9 @@ namespace recorder
 
             if (IsRecording) 
             {
-                long deltaAfterStartingMiliseconds = DateTime.Now.Ticks - startTime.Ticks;
-                streamWriter.WriteLine($"{deltaAfterStartingMiliseconds}, {me}, {x}, {y}");
+                TimeSpan timestamp = DateTime.Now - startTime;
+                //long deltaAfterStartingMiliseconds = DateTime.Now.Ticks - startTime.Ticks;
+                streamWriter.WriteLine($"{timestamp}, {me}, {x}, {y}");
             }
         }
 

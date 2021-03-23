@@ -30,42 +30,38 @@ namespace recorder
         private int VideoAudioBitRate { get; } = 320 * 1000;
 
         private VideoFileWriter vfw;
-        private MouseEventManager mem = new MouseEventManager();
-        Bitmap lastFrame;
-        AudioCaptureDevice audioDevice;
+        private MouseEventManager mem;
         ScreenCaptureStream screenStream;
-        Graphics g;
         string basePath = "";
-        long tickCount = 0;
         bool IsRecording = false;
 
         AudioSourceMixer audioMixer;
 
         private DateTime RecordingStartTime = DateTime.MinValue;
-        private long frameCount = 0;
         private Object syncObj = new Object();
 
 
         public Form1()
         {
             InitializeComponent();
+            
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+        }
 
-            InitScreenStream();
-
-            //InitAudioDevices();
-
-            //InitVideoFileWriter();
+        private void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            StopRecording();
         }
 
         ~Form1()
         {
-            if (vfw != null)
-            {
-                vfw.Flush();
-                vfw.Close();
-            }
+            StopRecording();
         }
 
+        private void InitMouseEvent() 
+        {
+            mem = new MouseEventManager();
+        }
 
         private void InitScreenStream()
         {
@@ -87,9 +83,10 @@ namespace recorder
             vfw.Height = Screen.PrimaryScreen.Bounds.Height;
             vfw.VideoCodec = VideoCodec.H264;
             vfw.VideoOptions["crf"] = "18"; // visually lossless
-            vfw.VideoOptions["preset"] = "veryfast";
-            vfw.VideoOptions["tune"] = "zerolatency";
+            vfw.VideoOptions["preset"] = "medium";
+            vfw.VideoOptions["tune"] = "animation";
             vfw.VideoOptions["x264opts"] = "no-mbtree:sliced-threads:sync-lookahead=0";
+            vfw.VideoOptions["flush_packets"] = "1";
 
             if (audioMixer != null)
             {
@@ -163,7 +160,6 @@ namespace recorder
             //pictureBox1.Image = lastFrame;
 
             DateTime currentFrameTime = eventArgs.CaptureFinished;
-            frameCount++;
 
             if (IsRecording)
             {
@@ -179,11 +175,6 @@ namespace recorder
                         vfw.WriteVideoFrame(eventArgs.Frame);
                     }
                 }
-
-                if (frameCount % VideoFrameRate == 0)
-                {
-                    vfw.Flush();
-                }
             }
         }
 
@@ -198,7 +189,22 @@ namespace recorder
                 lock (syncObj) // Save the frame to the video file.
                 {
                     vfw.WriteAudioFrame(signal);
-                }                                   
+                }
+
+                //float max = 0;
+                //for(int i = 0; i < signal.Length / 10; i++)
+                //{
+                //    var sample = signal.GetSample(1, i);
+                //    if (sample < 0)
+                //    {
+                //        sample = -sample;
+                //    }
+                //    if (sample > max)
+                //    {
+                //        max = sample;
+                //    }
+                //    progressBar1.Invoke((MethodInvoker)delegate { progressBar1.Value = (int)(100f * max); });
+                //}
             }
         }
         private void AudioSourceError(object sender, AudioSourceErrorEventArgs e)
@@ -231,29 +237,32 @@ namespace recorder
             }
 
             RecordingStartTime = DateTime.MinValue;
-            frameCount = 0;
 
             prepareSavePath();
             string fileNameBase = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
 
-
+            InitScreenStream();
             InitAudioDevices();
-
             InitVideoFileWriter();
+            InitMouseEvent();
 
             vfw.Open(basePath + fileNameBase + ".mp4");
             mem.Start(basePath + fileNameBase + ".mtr");
 
             IsRecording = true;
+            RecIndicatorOn();
         }
 
 
         public void StopRecording()
         {
             if (!IsRecording)
+            {
                 return;
+            }
 
             IsRecording = false;
+            RecIndicatorOff();
 
             lock (syncObj)
             {
@@ -267,6 +276,13 @@ namespace recorder
                 if (mem != null)
                 {
                     mem.Stop();
+                    mem = null;
+                }
+
+                if (screenStream != null)
+                {
+                    screenStream.Stop();
+                    screenStream = null;
                 }
 
                 if (audioMixer != null)
@@ -282,6 +298,29 @@ namespace recorder
                     audioMixer = null;
                 }
             }
+        }
+
+        private Timer RecIndicator = null;
+        private void RecIndicatorOn()
+        {
+            if (RecIndicator == null)
+            {
+                RecIndicator = new Timer();
+                RecIndicator.Interval = 500;
+                RecIndicator.Tick += RecIndicator_Tick;
+            }
+            
+            RecIndicator.Start();
+        }
+        
+        private void RecIndicatorOff()
+        {
+            RecIndicator.Stop();
+            recSingal.ForeColor = Color.Gray;
+        }
+        private void RecIndicator_Tick(object sender, EventArgs e)
+        {
+            recSingal.ForeColor = recSingal.ForeColor == Color.Red ? Color.Gray : Color.Red;
         }
 
         private void btnRecording_Click(object sender, EventArgs e)
@@ -304,6 +343,11 @@ namespace recorder
         {
             btnRecording.Enabled = true;
             btnStop.Enabled = false;
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            StopRecording();
         }
     }
 }
