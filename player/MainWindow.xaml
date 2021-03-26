@@ -12,15 +12,14 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto"   />
         </Grid.RowDefinitions>
-        <Canvas Grid.Row="0" Grid.Column="0">
-            <MediaElement 
-            x:Name="mediaElement"
+        <MediaElement Grid.Row="0" Grid.Column="0"
+                x:Name="mediaElement"
             Margin="5"
             ScrubbingEnabled="True"
             LoadedBehavior="Manual"
-               Stretch="Uniform" />   
-            <Image x:Name="heatmap" Opacity="0.2"/>
-        </Canvas>
+               Stretch="Uniform" 
+        />
+        <Image x:Name="heatmap" Opacity="0.2" Grid.Row="0" Grid.Column="0"/>
         <ScrollBar Name="positionScrollBar" Grid.Row="1"
             Orientation="Horizontal"
             VerticalAlignment="Center"
