@@ -134,5 +134,10 @@
   <ItemGroup>
     <None Include="Resources\stop.png" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ar1st0crat.SciColorMaps.Portable">
+      <Version>1.0.2</Version>
+    </PackageReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

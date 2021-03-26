@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -36,8 +37,12 @@ namespace player
     {
         private TimeSpan startTime = TimeSpan.Zero;
         private List<MouseEventPoint> data = new List<MouseEventPoint>();
-        public MouseDecorder(string fileName)
+        private int Width;
+        private int Height;
+        public MouseDecorder(string fileName, int width, int height)
         {
+            Width = width;
+            Height = height;
             string[] lines = System.IO.File.ReadAllLines(fileName);
             foreach (string line in lines)
             {
@@ -55,7 +60,7 @@ namespace player
         {
             using (var memory = new System.IO.MemoryStream())
             {
-                bmp.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+                createHeatmap().Save(memory, System.Drawing.Imaging.ImageFormat.Png);
                 memory.Position = 0;
 
                 var bitmapImage = new BitmapImage();
@@ -71,10 +76,11 @@ namespace player
 
         private List<HeatPoint> HeatPoints = new List<HeatPoint>();
 
-        private void button1_Click(object sender, EventArgs e)
+        Image image;
+        private Image createHeatmap()
         {
             // Create new memory bitmap the same size as the picture box
-            Bitmap bMap = new Bitmap(pictureBox1.Width, pictureBox1.Height);
+            Bitmap bMap = new Bitmap(Width, Height);
             // Initialize random number generator
             Random rRand = new Random();
             // Loop variables
@@ -85,14 +91,16 @@ namespace player
             for (int i = 0; i < 500; i++)
             {
                 // Pick random locations and intensity
-                iX = rRand.Next(0, 200);
-                iY = rRand.Next(0, 200);
+                iX = rRand.Next(0, 1920);
+                iY = rRand.Next(0, 1080);
                 iIntense = (byte)rRand.Next(0, 120);
                 // Add heat point to heat points list
                 HeatPoints.Add(new HeatPoint(iX, iY, iIntense));
             }
-            // Call CreateIntensityMask, give it the memory bitmap, and use it's output to set the picture box image
-            pictureBox1.Image = CreateIntensityMask(bMap, HeatPoints);
+            // Call CreateIntensityMask, give it the memory bitmap, and store the result back in the memory bitmap
+            bMap = CreateIntensityMask(bMap, HeatPoints);
+            // Colorize the memory bitmap and assign it as the picture boxes image
+            return Colorize(bMap, 255);
         }
         private Bitmap CreateIntensityMask(Bitmap bSurface, List<HeatPoint> aHeatPoints)
         {
@@ -167,17 +175,52 @@ namespace player
             return (radians);
         }
 
-        public struct HeatPoint
+        public static Bitmap Colorize(Bitmap Mask, byte Alpha)
         {
-            public int X;
-            public int Y;
-            public byte Intensity;
-            public HeatPoint(int iX, int iY, byte bIntensity)
+            // Create new bitmap to act as a work surface for the colorization process
+            Bitmap Output = new Bitmap(Mask.Width, Mask.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            // Create a graphics object from our memory bitmap so we can draw on it and clear it's drawing surface
+            Graphics Surface = Graphics.FromImage(Output);
+            Surface.Clear(System.Drawing.Color.Transparent);
+            // Build an array of color mappings to remap our greyscale mask to full color
+            // Accept an alpha byte to specify the transparancy of the output image
+            ColorMap[] Colors = CreatePaletteIndex(Alpha);
+            // Create new image attributes class to handle the color remappings
+            // Inject our color map array to instruct the image attributes class how to do the colorization
+            ImageAttributes Remapper = new ImageAttributes();
+            Remapper.SetRemapTable(Colors);
+            // Draw our mask onto our memory bitmap work surface using the new color mapping scheme
+            Surface.DrawImage(Mask, new Rectangle(0, 0, Mask.Width, Mask.Height), 0, 0, Mask.Width, Mask.Height, GraphicsUnit.Pixel, Remapper);
+            // Send back newly colorized memory bitmap
+            return Output;
+        }
+        private static ColorMap[] CreatePaletteIndex(byte Alpha)
+        {
+            ColorMap[] OutputMap = new ColorMap[256];
+            // Change this path to wherever you saved the palette image.
+            var libColor = new SciColorMaps.Portable.MirrorColorMap(new SciColorMaps.Portable.ColorMap("spectral", 0, 255));
+            //Bitmap Palette = (Bitmap)Bitmap.FromFile(@"C:\Users\Dylan\Documents\Visual Studio 2005\Projects\HeatMapTest\palette.bmp");
+            // Loop through each pixel and create a new color mapping
+            for (int X = 0; X <= 255; X++)
             {
-                X = iX;
-                Y = iY;
-                Intensity = bIntensity;
+                OutputMap[X] = new ColorMap();
+                OutputMap[X].OldColor = System.Drawing.Color.FromArgb(X, X, X);
+                OutputMap[X].NewColor = System.Drawing.Color.FromArgb(Alpha, libColor[X][0], libColor[X][1], libColor[X][2]) ;
             }
+            return OutputMap;
+        }
+    }
+
+    public struct HeatPoint
+    {
+        public int X;
+        public int Y;
+        public byte Intensity;
+        public HeatPoint(int iX, int iY, byte bIntensity)
+        {
+            X = iX;
+            Y = iY;
+            Intensity = bIntensity;
         }
     }
 }

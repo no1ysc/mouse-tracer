@@ -17,8 +17,9 @@
             x:Name="mediaElement"
             Margin="5"
             ScrubbingEnabled="True"
-            LoadedBehavior="Manual"/>   
-            <Image x:Name="heatmap"/>
+            LoadedBehavior="Manual"
+               Stretch="Uniform" />   
+            <Image x:Name="heatmap" Opacity="0.2"/>
         </Canvas>
         <ScrollBar Name="positionScrollBar" Grid.Row="1"
             Orientation="Horizontal"
