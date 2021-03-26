@@ -51,7 +51,6 @@ namespace player
             this.dispatcherTimer.Tick += dispatcherTimer_Tick;
             this.mediaElement.Stop();
             this.mediaElement.Source = new Uri(@"C:\Users\JS\Documents\mouse-tracer\2021-03-26 15-01-17.mp4");
-            mouseDecorder = new MouseDecorder(@"C:\Users\JS\Documents\mouse-tracer\2021-03-26 15-01-17.mtr");
         }
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
@@ -84,6 +83,7 @@ namespace player
         private void playButton_Click(object sender, RoutedEventArgs e)
         {
             this.mediaElement.Play();
+            mouseDecorder = new MouseDecorder(@"C:\Users\JS\Documents\mouse-tracer\2021-03-26 15-01-17.mtr", this.mediaElement.NaturalVideoWidth, this.mediaElement.NaturalVideoHeight);
 
             SetButtnsEnabled(true);
         }

@@ -36,6 +36,8 @@ namespace player
     public class MouseDecorder
     {
         private TimeSpan startTime = TimeSpan.Zero;
+        private TimeSpan latestHeatmapTime = TimeSpan.Zero;
+
         private List<MouseEventPoint> data = new List<MouseEventPoint>();
         private int Width;
         private int Height;
@@ -58,6 +60,14 @@ namespace player
 
         internal BitmapImage GetHeatmap(TimeSpan position)
         {
+            var processing = data.Where(d => d.timeSpan > latestHeatmapTime && d.timeSpan <= position).Where(d2 => d2.mouseEvent == MouseEvent.Move);
+
+            foreach(var process in processing)
+            {
+                HeatPoints.Add(new HeatPoint(process.x, process.y, 80));
+            }
+            
+
             using (var memory = new System.IO.MemoryStream())
             {
                 createHeatmap().Save(memory, System.Drawing.Imaging.ImageFormat.Png);
@@ -70,6 +80,8 @@ namespace player
                 bitmapImage.EndInit();
                 bitmapImage.Freeze();
 
+                latestHeatmapTime = position;
+
                 return bitmapImage;
             }
         }
@@ -81,22 +93,21 @@ namespace player
         {
             // Create new memory bitmap the same size as the picture box
             Bitmap bMap = new Bitmap(Width, Height);
-            // Initialize random number generator
-            Random rRand = new Random();
-            // Loop variables
-            int iX;
-            int iY;
-            byte iIntense;
-            // Lets loop 500 times and create a random point each iteration
-            for (int i = 0; i < 500; i++)
-            {
-                // Pick random locations and intensity
-                iX = rRand.Next(0, 1920);
-                iY = rRand.Next(0, 1080);
-                iIntense = (byte)rRand.Next(0, 120);
-                // Add heat point to heat points list
-                HeatPoints.Add(new HeatPoint(iX, iY, iIntense));
-            }
+            
+            //// Loop variables
+            //int iX;
+            //int iY;
+            //byte iIntense;
+            //// Lets loop 500 times and create a random point each iteration
+            //for (int i = 0; i < 500; i++)
+            //{
+            //    // Pick random locations and intensity
+            //    iX = rRand.Next(0, 1920);
+            //    iY = rRand.Next(0, 1080);
+            //    iIntense = (byte)rRand.Next(0, 120);
+            //    // Add heat point to heat points list
+            //    HeatPoints.Add(new HeatPoint(iX, iY, iIntense));
+            //}
             // Call CreateIntensityMask, give it the memory bitmap, and store the result back in the memory bitmap
             bMap = CreateIntensityMask(bMap, HeatPoints);
             // Colorize the memory bitmap and assign it as the picture boxes image
