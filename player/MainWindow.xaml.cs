@@ -1,8 +1,10 @@
-﻿using MahApps.Metro.Controls;
+﻿using Accord.Video.FFMPEG;
+using MahApps.Metro.Controls;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -34,7 +36,6 @@ namespace player
             this.playButton.Click += playButton_Click;
             this.pauseButton.Click += pauseButton_Click;
             this.stopButton.Click += stopButton_Click;
-            this.restartButton.Click += restartButton_Click;
             this.fasterButton.Click += fasterButton_Click;
             this.slowerButton.Click += slowerButton_Click;
             this.loadButton.Click += loadButton_Click;
@@ -43,14 +44,13 @@ namespace player
 
         private DispatcherTimer dispatcherTimer;
         private MouseDecorder mouseDecorder;
-        private Graphics g;
-
+        
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.dispatcherTimer = new DispatcherTimer();
             this.dispatcherTimer.Interval = TimeSpan.FromMilliseconds(10);
             this.dispatcherTimer.Tick += dispatcherTimer_Tick;
-            this.mediaElement.Stop();
+            SetButtnsEnabled();
         }
 
         private string timespanToString(TimeSpan timespan)
@@ -88,6 +88,7 @@ namespace player
                     }
 
                     this.mediaElement.Source = new Uri(movieFile);
+                    mediaElement.Stop();
                 }
             }
         }
@@ -99,14 +100,19 @@ namespace player
             this.timeline.Minimum = 0;
             this.timeline.Value = 0;
             this.timeline.Maximum = this.mediaElement.NaturalDuration.TimeSpan.TotalMilliseconds;
-            this.timeline.Visibility = Visibility.Visible;
+            //this.timeline.Visibility = Visibility.Visible;
 
             this.startLine.Minimum = 0;
             this.startLine.Value = 0;
             this.startLine.Maximum = this.mediaElement.NaturalDuration.TimeSpan.TotalMilliseconds;
-            this.startLine.Visibility = Visibility.Visible;
+            //this.startLine.Visibility = Visibility.Visible;
 
             mouseDecorder = new MouseDecorder(mtrPath, this.mediaElement.NaturalVideoWidth, this.mediaElement.NaturalVideoHeight);
+            heatmapIntensity.Value = mouseDecorder.HeatmapIntensity;
+            heatmapRadius.Value = mouseDecorder.HeatmapRadius;
+            //heatmapIntensity.IsEnabled = true;
+            //heatmapRadius.IsEnabled = true;
+
             this.heatmap.Source = mouseDecorder.GetHeatmap(TimeSpan.Zero);
         }
 
@@ -115,9 +121,10 @@ namespace player
             Playing,
             Paused,
             Stopped,
+            Initial,
         }
 
-        private MediaStatusEnum MediaStatus = MediaStatusEnum.Stopped;
+        private MediaStatusEnum MediaStatus = MediaStatusEnum.Initial;
 
         private void playButton_Click(object sender, RoutedEventArgs e)
         {
@@ -134,12 +141,6 @@ namespace player
             StopMedia();
         }
 
-        private void restartButton_Click(object sender, RoutedEventArgs e)
-        {
-            StopMedia();
-            PlayMedia();
-        }
-
         private double[] SpeedRatioTable = { 0.5d, 0.75d, 1.0d, 1.25d, 1.5d, 1.75d, 2.0d, 3.0d };
         private int SpeedRatioIndex = 2;
         private void fasterButton_Click(object sender, RoutedEventArgs e)
@@ -154,23 +155,104 @@ namespace player
             this.strPlaySpeed.Content = this.mediaElement.SpeedRatio;
         }
 
-        private void SetButtnsEnabled(bool isPlaying)
+        private void SetButtnsEnabled()
         {
-            if (isPlaying)
+            switch(MediaStatus)
             {
-                this.playButton.IsEnabled = false;
-                this.pauseButton.IsEnabled = true;
-                this.playButton.Opacity = 0.5d;
-                this.pauseButton.Opacity = 1.0d;
+                case MediaStatusEnum.Playing:
+                    this.playButton.IsEnabled = false;
+                    this.playButton.Opacity = 0.5d;
+
+                    this.pauseButton.IsEnabled = true;
+                    this.pauseButton.Opacity = 1.0d;
+
+                    this.slowerButton.IsEnabled = true;
+                    this.slowerButton.Opacity = 1.0d;
+
+                    this.fasterButton.IsEnabled = true;
+                    this.fasterButton.Opacity = 1.0d;
+
+                    this.stopButton.IsEnabled = true;
+                    this.stopButton.Opacity = 1.0d;
+
+                    this.btnExtract.IsEnabled = true;
+                    this.timeline.Visibility = Visibility.Visible;
+                    this.startLine.Visibility = Visibility.Visible;
+                    this.heatmapIntensity.IsEnabled = true;
+                    this.heatmapRadius.IsEnabled = true;
+                    this.dispatcherTimer.IsEnabled = true;
+                    break;
+                case MediaStatusEnum.Paused:
+                    this.playButton.IsEnabled = true;
+                    this.playButton.Opacity = 1.0d;
+
+                    this.pauseButton.IsEnabled = false;
+                    this.pauseButton.Opacity = 0.5d;
+
+                    this.slowerButton.IsEnabled = true;
+                    this.slowerButton.Opacity = 1.0d;
+
+                    this.fasterButton.IsEnabled = true;
+                    this.fasterButton.Opacity = 1.0d;
+
+                    this.stopButton.IsEnabled = true;
+                    this.stopButton.Opacity = 1.0d;
+
+                    this.btnExtract.IsEnabled = true;
+                    this.timeline.Visibility = Visibility.Visible;
+                    this.startLine.Visibility = Visibility.Visible;
+                    this.heatmapIntensity.IsEnabled = true;
+                    this.heatmapRadius.IsEnabled = true;
+                    this.dispatcherTimer.IsEnabled = false;
+                    break;
+                case MediaStatusEnum.Stopped:
+                    this.playButton.IsEnabled = true;
+                    this.playButton.Opacity = 1.0d;
+
+                    this.pauseButton.IsEnabled = false;
+                    this.pauseButton.Opacity = 0.5d;
+
+                    this.slowerButton.IsEnabled = true;
+                    this.slowerButton.Opacity = 1.0d;
+
+                    this.fasterButton.IsEnabled = true;
+                    this.fasterButton.Opacity = 1.0d;
+
+                    this.stopButton.IsEnabled = false;
+                    this.stopButton.Opacity = 0.5d;
+
+                    this.btnExtract.IsEnabled = false;
+                    this.timeline.Visibility = Visibility.Hidden;
+                    this.startLine.Visibility = Visibility.Hidden;
+                    this.heatmapIntensity.IsEnabled = false;
+                    this.heatmapRadius.IsEnabled = false;
+                    this.dispatcherTimer.IsEnabled = false;
+                    break;
+                case MediaStatusEnum.Initial:
+                    this.playButton.IsEnabled = false;
+                    this.playButton.Opacity = 0.5d;
+
+                    this.pauseButton.IsEnabled = false;
+                    this.pauseButton.Opacity = 0.5d;
+
+                    this.slowerButton.IsEnabled = false;
+                    this.slowerButton.Opacity = 0.5d;
+
+                    this.fasterButton.IsEnabled = false;
+                    this.fasterButton.Opacity = 0.5d;
+
+                    this.stopButton.IsEnabled = false;
+                    this.stopButton.Opacity = 0.5d;
+
+                    this.btnExtract.IsEnabled = false;
+                    this.timeline.Visibility = Visibility.Hidden;
+                    this.startLine.Visibility = Visibility.Hidden;
+                    this.heatmapIntensity.IsEnabled = false;
+                    this.heatmapRadius.IsEnabled = false;
+                    this.dispatcherTimer.IsEnabled = false;
+                    break;
+
             }
-            else
-            {
-                this.playButton.IsEnabled = true;
-                this.pauseButton.IsEnabled = false;
-                this.playButton.Opacity = 1.0d;
-                this.pauseButton.Opacity = 0.5d;
-            }
-            this.dispatcherTimer.IsEnabled = isPlaying;
         }
 
         public string TimelineString
@@ -197,7 +279,7 @@ namespace player
             MediaStatus = MediaStatusEnum.Playing;
             this.mediaElement.Play();
 
-            SetButtnsEnabled(true);
+            SetButtnsEnabled();
         }
 
         private void StopMedia()
@@ -205,7 +287,7 @@ namespace player
             MediaStatus = MediaStatusEnum.Stopped;
             this.mediaElement.Stop();
 
-            SetButtnsEnabled(false);
+            SetButtnsEnabled();
 
             startLine.Value = 0;
             timeline.Value = 0;
@@ -216,7 +298,7 @@ namespace player
             MediaStatus = MediaStatusEnum.Paused;
             this.mediaElement.Pause();
 
-            SetButtnsEnabled(false);
+            SetButtnsEnabled();
         }
 
         private MediaStatusEnum prevMediaStatusUsingMouse;
@@ -238,19 +320,7 @@ namespace player
         {
             TimeSpan timeSpan = TimeSpan.FromTicks((int)e.NewValue * TimeSpan.TicksPerMillisecond);
             strCurrentPoint.Content = timespanToString(timeSpan);
-            if (IsFromDispatcher)
-            {
-                return;
-            }
-
-            if (e.NewValue < startLine.Value)
-            {
-                timeline.Value = startLine.Value;
-                return;
-            }
-
-            SetMediaPosition(timeSpan);
-
+            strDelta.Content = timespanToString(TimeSpan.FromTicks((int)(timeline.Value - startLine.Value) * TimeSpan.TicksPerMillisecond));
             // plotting heatmap
             if (e.NewValue < e.OldValue)
             {
@@ -258,6 +328,19 @@ namespace player
                 mouseDecorder.SetStartTime(TimeSpan.FromTicks((long)startLine.Value * TimeSpan.TicksPerMillisecond));
             }
             heatmap.Source = mouseDecorder.GetHeatmap(timeSpan);
+
+            if (e.NewValue < startLine.Value)
+            {
+                timeline.Value = startLine.Value;
+                return;
+            }
+
+            if (IsFromDispatcher)
+            {
+                return;
+            }
+
+            SetMediaPosition(timeSpan);
         }
 
         private void startLine_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -306,7 +389,13 @@ namespace player
                 case Key.Right:
                     prevMediaStatusUsingKeyboard = MediaStatus;
                     PauseMedia();
-                    timeline.Value += 1000;
+                    if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                    {
+                        startLine.Value += 1000;
+                    } else
+                    {
+                        timeline.Value += 1000;
+                    }
                     if (prevMediaStatusUsingKeyboard == MediaStatusEnum.Playing)
                     {
                         PlayMedia();
@@ -316,7 +405,14 @@ namespace player
                 case Key.Left:
                     prevMediaStatusUsingKeyboard = MediaStatus;
                     PauseMedia();
-                    timeline.Value -= 1000;
+                    if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                    {
+                        startLine.Value -= 1000;
+                    }
+                    else
+                    {
+                        timeline.Value -= 1000;
+                    }
                     if (prevMediaStatusUsingKeyboard == MediaStatusEnum.Playing)
                     {
                         PlayMedia();
@@ -325,6 +421,110 @@ namespace player
                     return;
                 default:
                     return;
+            }
+        }
+
+        private void heatmapRadius_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (mouseDecorder != null)
+            {
+                mouseDecorder.HeatmapRadius = (int)e.NewValue;
+            }
+        }
+
+        private void heatmapIntensity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (mouseDecorder != null)
+            {
+                mouseDecorder.HeatmapIntensity = (byte)e.NewValue;
+            }
+        }
+
+        private void btnExtract_Click(object sender, RoutedEventArgs e)
+        {
+            PauseMedia();
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.InitialDirectory = recentOpenedPath;
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                System.Drawing.Image heatmap = mouseDecorder.saveCurrentHeatmap(saveFileDialog.FileName + "-heatmap.png");
+                ConvertUiElementToBitmap(this.mediaElement, saveFileDialog.FileName + "-player.png");
+                mouseDecorder.savePartialMtr(saveFileDialog.FileName + ".mtr");
+
+                mergeImage(System.Drawing.Image.FromFile(saveFileDialog.FileName + "-player.png"), heatmap, 0.5).Save(saveFileDialog.FileName + ".png");
+
+                MessageBox.Show("Saved.");
+            }
+        }
+
+        private Bitmap mergeImage(System.Drawing.Image bottom, System.Drawing.Image front, double opacity)
+        {
+            Bitmap bmp = new Bitmap(bottom.Width, bottom.Height); // Determining Width and Height of Source Image
+            
+            Graphics graphics = Graphics.FromImage(bmp);
+
+            // bottom
+            graphics.DrawImage(bottom, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bottom.Width, bottom.Height, GraphicsUnit.Pixel);
+
+
+            ColorMatrix colormatrix = new ColorMatrix();
+
+            colormatrix.Matrix33 = (float)opacity;
+
+            ImageAttributes imgAttribute = new ImageAttributes();
+
+            imgAttribute.SetColorMatrix(colormatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+
+            // front
+            graphics.DrawImage(front, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, front.Width, front.Height, GraphicsUnit.Pixel, imgAttribute);
+
+            graphics.Dispose();   // Releasing all resource used by graphics 
+
+            return bmp;
+        }
+
+        //TODO: 좀있다가.
+        public void saveMediaFrame(string filePath)
+        {
+
+            using (var vFReader = new VideoFileReader())
+            {
+                //vFReader.Open(mediaElement.Source.AbsolutePath);
+                vFReader.Open(@"D:\07\07.mp4");
+                vFReader. ReadVideoFrame((int)mediaElement.Position.TotalMilliseconds).Save(filePath);
+                vFReader.Close();
+            }
+        }
+
+        public static void ConvertUiElementToBitmap(UIElement elt, string path)
+        {
+            double h = elt.RenderSize.Height;
+            double w = elt.RenderSize.Width;
+            if (h > 0)
+            {
+                PresentationSource source = PresentationSource.FromVisual(elt);
+                RenderTargetBitmap rtb = new RenderTargetBitmap((int)w, (int)h, 96, 96, PixelFormats.Default);
+
+                VisualBrush sourceBrush = new VisualBrush(elt);
+                DrawingVisual drawingVisual = new DrawingVisual();
+                DrawingContext drawingContext = drawingVisual.RenderOpen();
+                using (drawingContext)
+                {
+                    drawingContext.DrawRectangle(sourceBrush, null, new Rect(new System.Windows.Point(0, 0),
+                          new System.Windows.Point(w, h)));
+                }
+                rtb.Render(drawingVisual);
+
+                // return rtb;
+                var encoder = new PngBitmapEncoder();
+                var outputFrame = BitmapFrame.Create(rtb);
+                encoder.Frames.Add(outputFrame);
+
+                using (var file = File.OpenWrite(path))
+                {
+                    encoder.Save(file);
+                }
             }
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -32,6 +33,11 @@ namespace player
         public MouseEvent mouseEvent;
         public int x;
         public int y;
+
+        public override string ToString()
+        {
+            return $"{this.timeSpan}, {this.mouseEvent}, {this.x}, {this.y}";
+        }
     }
     public class MouseDecorder
     {
@@ -41,6 +47,56 @@ namespace player
         private List<MouseEventPoint> data = new List<MouseEventPoint>();
         private int Width;
         private int Height;
+
+        private int heatmapRadius = 15;
+        public int HeatmapRadius
+        {
+            get 
+            {
+                return heatmapRadius;
+            }
+            set
+            {
+                HeatPoints.Clear();
+                latestHeatmapTime = this.startTime;
+                heatmapRadius = value;
+            }
+        }
+        static public int HeatmapRadiusMin
+        {
+            get;
+        } = 5;
+
+        static public int HeatmapRadiusMax
+        {
+            get;
+        } = 150;
+
+        private byte heatmapIntensity = 80;
+        public byte HeatmapIntensity
+        {
+            get
+            {
+                return heatmapIntensity;
+            }
+            set
+            {
+                HeatPoints.Clear();
+                latestHeatmapTime = this.startTime;
+                heatmapIntensity = value;
+            }
+        }
+
+        static public byte HeatmapIntensityMin
+        {
+            get;
+        } = 10;
+
+        static public byte HeatmapIntensityMax
+        {
+            get;
+        } = 255;
+
         public MouseDecorder(string fileName, int width, int height)
         {
             Width = width;
@@ -60,13 +116,35 @@ namespace player
             latestHeatmapTime = this.startTime;
         }
 
+        public void savePartialMtr(string filePath)
+        {
+            StreamWriter streamWriter = new StreamWriter(filePath);
+            var processing = data.Where(d => d.timeSpan > startTime && d.timeSpan <= latestHeatmapTime);
+
+            foreach (var process in processing)
+            {
+                streamWriter.WriteLine(process);
+            }
+
+            streamWriter.Close();
+        }
+
+        internal Image saveCurrentHeatmap(string filePath)
+        {
+            Image image = createHeatmap();
+
+            image.Save(filePath, ImageFormat.Png);
+
+            return image;
+        }
+
         internal BitmapImage GetHeatmap(TimeSpan position)
         {
             var processing = data.Where(d => d.timeSpan > latestHeatmapTime && d.timeSpan <= position).Where(d2 => d2.mouseEvent == MouseEvent.Move);
 
             foreach(var process in processing)
             {
-                HeatPoints.Add(new HeatPoint(process.x, process.y, 80));
+                HeatPoints.Add(new HeatPoint(process.x, process.y, HeatmapIntensity));
             }
             
 
@@ -90,28 +168,14 @@ namespace player
 
         private List<HeatPoint> HeatPoints = new List<HeatPoint>();
 
-        Image image;
         private Image createHeatmap()
         {
             // Create new memory bitmap the same size as the picture box
             Bitmap bMap = new Bitmap(Width, Height);
             
-            //// Loop variables
-            //int iX;
-            //int iY;
-            //byte iIntense;
-            //// Lets loop 500 times and create a random point each iteration
-            //for (int i = 0; i < 500; i++)
-            //{
-            //    // Pick random locations and intensity
-            //    iX = rRand.Next(0, 1920);
-            //    iY = rRand.Next(0, 1080);
-            //    iIntense = (byte)rRand.Next(0, 120);
-            //    // Add heat point to heat points list
-            //    HeatPoints.Add(new HeatPoint(iX, iY, iIntense));
-            //}
             // Call CreateIntensityMask, give it the memory bitmap, and store the result back in the memory bitmap
             bMap = CreateIntensityMask(bMap, HeatPoints);
+            
             // Colorize the memory bitmap and assign it as the picture boxes image
             return Colorize(bMap, 255);
         }
@@ -125,7 +189,7 @@ namespace player
             foreach (HeatPoint DataPoint in aHeatPoints)
             {
                 // Render current heat point on draw surface
-                DrawHeatPoint(DrawSurface, DataPoint, 15);
+                DrawHeatPoint(DrawSurface, DataPoint, HeatmapRadius);
             }
             return bSurface;
         }
