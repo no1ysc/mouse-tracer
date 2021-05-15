@@ -35,19 +35,16 @@ namespace player
             this.pauseButton.Click += pauseButton_Click;
             this.stopButton.Click += stopButton_Click;
             this.restartButton.Click += restartButton_Click;
-            this.previousButton.Click += previousButton_Click;
-            this.nextButton.Click += nextButton_Click;
             this.fasterButton.Click += fasterButton_Click;
             this.slowerButton.Click += slowerButton_Click;
-            //this.setPositionButton.Click += setPositionButton_Click;
             this.loadButton.Click += loadButton_Click;
         }
 
-        
+
         private DispatcherTimer dispatcherTimer;
         private MouseDecorder mouseDecorder;
         private Graphics g;
-        
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.dispatcherTimer = new DispatcherTimer();
@@ -56,16 +53,21 @@ namespace player
             this.mediaElement.Stop();
         }
 
+        private string timespanToString(TimeSpan timespan)
+        {
+            return string.Format("{0:D2}:{1:D2}:{2:D2}.{3:D3}", timespan.Hours, timespan.Minutes, timespan.Seconds, timespan.Milliseconds);
+        }
+
+        private bool IsFromDispatcher = false;
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
-            //ShowPosition();
-            timeline.UpperValue = mediaElement.Position.TotalMilliseconds;
-
-            // 계산 후 업데이트.
-            this.heatmap.Source = mouseDecorder.GetHeatmap(mediaElement.Position);
+            IsFromDispatcher = true;
+            timeline.Value = mediaElement.Position.TotalMilliseconds;
+            IsFromDispatcher = false;
         }
 
         private string recentOpenedPath = "%HomePath%";
+        private string mtrPath = "";
         private void loadButton_Click(object sender, RoutedEventArgs e)
         {
             {
@@ -73,92 +75,83 @@ namespace player
                 openFileDialog.InitialDirectory = recentOpenedPath;
                 if (openFileDialog.ShowDialog() == true)
                 {
-                    string dictoryPath = openFileDialog.FileName;
+                    recentOpenedPath = openFileDialog.FileName.Substring(0, openFileDialog.FileName.LastIndexOf("\\"));
                     string movieFile = openFileDialog.FileName;
-                    string mtrFile = openFileDialog.FileName;
 
                     openFileDialog.InitialDirectory = recentOpenedPath;
-                    this.mediaElement.Source = new Uri(@"C:\Users\JS\Documents\mouse-tracer\2021-03-26 15-01-17.mp4");
-                    mouseDecorder = new MouseDecorder(@"C:\Users\JS\Documents\mouse-tracer\2021-03-26 15-01-17.mtr", this.mediaElement.NaturalVideoWidth, this.mediaElement.NaturalVideoHeight);
-                    Console.WriteLine(File.ReadAllText(openFileDialog.FileName));
+
+                    mtrPath = movieFile.Substring(0, movieFile.LastIndexOf(".")) + ".mtr";
+                    if (!File.Exists(mtrPath))
+                    {
+                        MessageBox.Show("Not exist mtr file.");
+                        return;
+                    }
+
+                    this.mediaElement.Source = new Uri(movieFile);
                 }
             }
         }
 
-        //private void ShowPosition()
-        //{
-        //    this.positionScrollBar.Value = this.mediaElement.Position.Ticks / TimeSpan.TicksPerMillisecond;
-        //    this.positionTextBox.Text = this.mediaElement.Position.TotalSeconds.ToString("0.00");
-        //}
-
-        //private void setPositionButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    TimeSpan timespan = TimeSpan.FromSeconds(double.Parse(this.positionTextBox.Text));
-        //    this.mediaElement.Position = timespan;
-
-        //    ShowPosition();
-        //}
         private void mediaElement_MediaOpened(object sender, RoutedEventArgs e)
         {
+            PlayMedia();
+            PauseMedia();
             this.timeline.Minimum = 0;
-            this.timeline.LowerValue = 0;
-            this.timeline.UpperValue = 0;
+            this.timeline.Value = 0;
             this.timeline.Maximum = this.mediaElement.NaturalDuration.TimeSpan.TotalMilliseconds;
             this.timeline.Visibility = Visibility.Visible;
+
+            this.startLine.Minimum = 0;
+            this.startLine.Value = 0;
+            this.startLine.Maximum = this.mediaElement.NaturalDuration.TimeSpan.TotalMilliseconds;
+            this.startLine.Visibility = Visibility.Visible;
+
+            mouseDecorder = new MouseDecorder(mtrPath, this.mediaElement.NaturalVideoWidth, this.mediaElement.NaturalVideoHeight);
+            this.heatmap.Source = mouseDecorder.GetHeatmap(TimeSpan.Zero);
         }
+
+        enum MediaStatusEnum
+        {
+            Playing,
+            Paused,
+            Stopped,
+        }
+
+        private MediaStatusEnum MediaStatus = MediaStatusEnum.Stopped;
 
         private void playButton_Click(object sender, RoutedEventArgs e)
         {
-            this.mediaElement.Play();
-
-            SetButtnsEnabled(true);
+            PlayMedia();
         }
 
         private void pauseButton_Click(object sender, RoutedEventArgs e)
         {
-            this.mediaElement.Pause();
-
-            SetButtnsEnabled(false);
+            PauseMedia();
         }
 
         private void stopButton_Click(object sender, RoutedEventArgs e)
         {
-            this.mediaElement.Stop();
-
-            SetButtnsEnabled(false);
-
-            //ShowPosition();
+            StopMedia();
         }
 
         private void restartButton_Click(object sender, RoutedEventArgs e)
         {
-            this.mediaElement.Stop();
-            this.mediaElement.Play();
-
-            SetButtnsEnabled(true);
+            StopMedia();
+            PlayMedia();
         }
 
-        private void previousButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.mediaElement.Position -= TimeSpan.FromSeconds(10);
-
-            //ShowPosition();
-        }
-
-        private void nextButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.mediaElement.Position += TimeSpan.FromSeconds(10);
-
-            //ShowPosition();
-        }
+        private double[] SpeedRatioTable = { 0.5d, 0.75d, 1.0d, 1.25d, 1.5d, 1.75d, 2.0d, 3.0d };
+        private int SpeedRatioIndex = 2;
         private void fasterButton_Click(object sender, RoutedEventArgs e)
         {
-            this.mediaElement.SpeedRatio *= 1.5d;
+            this.mediaElement.SpeedRatio = SpeedRatioTable[SpeedRatioIndex == SpeedRatioTable.Length - 1 ? SpeedRatioTable.Length - 1 : ++SpeedRatioIndex];
+            this.strPlaySpeed.Content = this.mediaElement.SpeedRatio;
         }
 
         private void slowerButton_Click(object sender, RoutedEventArgs e)
         {
-            this.mediaElement.SpeedRatio /= 1.5d;
+            this.mediaElement.SpeedRatio = SpeedRatioTable[SpeedRatioIndex == 0 ? 0 : --SpeedRatioIndex];
+            this.strPlaySpeed.Content = this.mediaElement.SpeedRatio;
         }
 
         private void SetButtnsEnabled(bool isPlaying)
@@ -180,59 +173,159 @@ namespace player
             this.dispatcherTimer.IsEnabled = isPlaying;
         }
 
-        bool IsMovingPosition = false;
-        private void positionScrollBar_MouseDown(object sender, MouseButtonEventArgs e)
+        public string TimelineString
         {
-            
+            get;
+            private set;
+        }
+        public static readonly DependencyProperty CompanyNameProperty =
+            DependencyProperty.Register("TimelineString", typeof(string), typeof(MainWindow), new UIPropertyMetadata(string.Empty));
+
+        private void SetMediaPosition(long offsetMilliseconds)
+        {
+            this.mediaElement.Position = TimeSpan.FromTicks(offsetMilliseconds * TimeSpan.TicksPerMillisecond);
         }
 
-        private void positionScrollBar_MouseUp(object sender, MouseButtonEventArgs e)
+        private void SetMediaPosition(TimeSpan timeSpan)
         {
-            
+            this.mediaElement.Position = timeSpan;
         }
 
-        private void positionScrollBar_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e)
+
+        private void PlayMedia()
         {
-            //Console.WriteLine(this.positionScrollBar.Value);
+            MediaStatus = MediaStatusEnum.Playing;
+            this.mediaElement.Play();
+
+            SetButtnsEnabled(true);
         }
 
-        private void positionScrollBar_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void StopMedia()
         {
-            IsMovingPosition = true;
+            MediaStatus = MediaStatusEnum.Stopped;
+            this.mediaElement.Stop();
+
+            SetButtnsEnabled(false);
+
+            startLine.Value = 0;
+            timeline.Value = 0;
+        }
+
+        private void PauseMedia()
+        {
+            MediaStatus = MediaStatusEnum.Paused;
             this.mediaElement.Pause();
-            this.dispatcherTimer.Stop();
+
+            SetButtnsEnabled(false);
         }
 
-        private void positionScrollBar_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private MediaStatusEnum prevMediaStatusUsingMouse;
+        private void timeline_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
         {
-            if (IsMovingPosition)
+            prevMediaStatusUsingMouse = MediaStatus;
+            PauseMedia();
+        }
+
+        private void timeline_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            if (prevMediaStatusUsingMouse == MediaStatusEnum.Playing)
             {
-                //this.mediaElement.Position = TimeSpan.FromTicks((long)this.positionScrollBar.Value);
-                //this.dispatcherTimer.Start();
-                //this.mediaElement.Play();
-                //IsMovingPosition = false;
+                PlayMedia();
             }
         }
 
-        private void timeline_LowerValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void timeline_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            this.mediaElement.Position = TimeSpan.FromTicks((int)e.NewValue * TimeSpan.TicksPerMillisecond);
-            //this.timeline.UpperValue = e.NewValue;
+            TimeSpan timeSpan = TimeSpan.FromTicks((int)e.NewValue * TimeSpan.TicksPerMillisecond);
+            strCurrentPoint.Content = timespanToString(timeSpan);
+            if (IsFromDispatcher)
+            {
+                return;
+            }
+
+            if (e.NewValue < startLine.Value)
+            {
+                timeline.Value = startLine.Value;
+                return;
+            }
+
+            SetMediaPosition(timeSpan);
+
+            // plotting heatmap
+            if (e.NewValue < e.OldValue)
+            {
+                // if timeline value is decrase, re-plot heatmap using startLine time information.
+                mouseDecorder.SetStartTime(TimeSpan.FromTicks((long)startLine.Value * TimeSpan.TicksPerMillisecond));
+            }
+            heatmap.Source = mouseDecorder.GetHeatmap(timeSpan);
         }
 
-        private void timeline_UpperThumbDragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+        private void startLine_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            this.timeline.UpperValueChanged += timeline_UpperThumbValueChanged;
+            TimeSpan timeSpan = TimeSpan.FromTicks((int)e.NewValue * TimeSpan.TicksPerMillisecond);
+            strStartingPoint.Content = timespanToString(timeSpan);
+            
+            // Changing starting timespan of mouseDecorder
+            mouseDecorder.SetStartTime(timeSpan);
+            
+            timeline.Value = startLine.Value;
         }
 
-        private void timeline_UpperThumbDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        private void startLine_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
         {
-            this.timeline.UpperValueChanged -= timeline_UpperThumbValueChanged;
+            prevMediaStatusUsingMouse = MediaStatus;
+            PauseMedia();
         }
 
-        private void timeline_UpperThumbValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void startLine_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            this.mediaElement.Position = TimeSpan.FromTicks((int)e.NewValue * TimeSpan.TicksPerMillisecond);
+            if (prevMediaStatusUsingMouse == MediaStatusEnum.Playing)
+            {
+                PlayMedia();
+            }
+        }
+
+        private MediaStatusEnum prevMediaStatusUsingKeyboard;
+        private void MetroWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Space:
+                    {
+                        if (MediaStatus != MediaStatusEnum.Playing)
+                        {
+                            PlayMedia();
+                        }
+                        else
+                        {
+                            PauseMedia();
+                        }
+                        e.Handled = true;
+                    }
+                    return;
+                case Key.Right:
+                    prevMediaStatusUsingKeyboard = MediaStatus;
+                    PauseMedia();
+                    timeline.Value += 1000;
+                    if (prevMediaStatusUsingKeyboard == MediaStatusEnum.Playing)
+                    {
+                        PlayMedia();
+                    }
+                    e.Handled = true;
+                    return;
+                case Key.Left:
+                    prevMediaStatusUsingKeyboard = MediaStatus;
+                    PauseMedia();
+                    timeline.Value -= 1000;
+                    if (prevMediaStatusUsingKeyboard == MediaStatusEnum.Playing)
+                    {
+                        PlayMedia();
+                    }
+                    e.Handled = true;
+                    return;
+                default:
+                    return;
+            }
         }
     }
 }

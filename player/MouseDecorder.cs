@@ -55,7 +55,9 @@ namespace player
 
         public void SetStartTime(TimeSpan timeSpan)
         {
+            HeatPoints.Clear();
             this.startTime = timeSpan;
+            latestHeatmapTime = this.startTime;
         }
 
         internal BitmapImage GetHeatmap(TimeSpan position)
