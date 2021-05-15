@@ -138,6 +138,9 @@
     <PackageReference Include="ar1st0crat.SciColorMaps.Portable">
       <Version>1.0.2</Version>
     </PackageReference>
+    <PackageReference Include="MahApps.Metro">
+      <Version>2.4.5</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
