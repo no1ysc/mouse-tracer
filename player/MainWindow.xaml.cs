@@ -451,7 +451,8 @@ namespace player
                 System.Drawing.Image heatmap = mouseDecorder.saveCurrentHeatmap(saveFileDialog.FileName + "-heatmap.png");
                 ConvertUiElementToBitmap(this.mediaElement, saveFileDialog.FileName + "-player.png");
                 mouseDecorder.savePartialMtr(saveFileDialog.FileName + ".mtr");
-
+                mouseDecorder.savePartialMtr(saveFileDialog.FileName + ".mtr");
+                ConvertUiElementToBitmap(this, saveFileDialog.FileName + "-capture.png");
                 mergeImage(System.Drawing.Image.FromFile(saveFileDialog.FileName + "-player.png"), heatmap, 0.5).Save(saveFileDialog.FileName + ".png");
 
                 MessageBox.Show("Saved.");
