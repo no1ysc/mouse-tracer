@@ -400,12 +400,25 @@ namespace player
                 case Key.Right:
                     prevMediaStatusUsingKeyboard = MediaStatus;
                     PauseMedia();
-                    if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                    if (Keyboard.IsKeyDown(Key.LeftShift))
                     {
-                        startLine.Value += 1000;
+                        if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                        {
+                            startLine.Value += 10000;
+                        }
+                        else
+                        {
+                            startLine.Value += 1000;
+                        }
                     } else
                     {
-                        timeline.Value += 1000;
+                        if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                        {
+                            timeline.Value += 10000;
+                        } else
+                        {
+                            timeline.Value += 1000;
+                        }
                     }
                     if (prevMediaStatusUsingKeyboard == MediaStatusEnum.Playing)
                     {
@@ -416,13 +429,27 @@ namespace player
                 case Key.Left:
                     prevMediaStatusUsingKeyboard = MediaStatus;
                     PauseMedia();
-                    if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                    if (Keyboard.IsKeyDown(Key.LeftShift))
                     {
-                        startLine.Value -= 1000;
+                        if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                        {
+                            startLine.Value -= 10000;
+                        }
+                        else
+                        {
+                            startLine.Value -= 1000;
+                        }
                     }
                     else
                     {
-                        timeline.Value -= 1000;
+                        if (Keyboard.IsKeyDown(Key.LeftCtrl))
+                        {
+                            timeline.Value -= 10000;
+                        }
+                        else
+                        {
+                            timeline.Value -= 1000;
+                        }
                     }
                     if (prevMediaStatusUsingKeyboard == MediaStatusEnum.Playing)
                     {
