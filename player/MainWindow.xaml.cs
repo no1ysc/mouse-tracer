@@ -419,6 +419,10 @@ namespace player
                     }
                     e.Handled = true;
                     return;
+                case Key.P:
+                    Extract();
+                    e.Handled = true;
+                    return;
                 default:
                     return;
             }
@@ -440,8 +444,13 @@ namespace player
             }
         }
 
-        private void btnExtract_Click(object sender, RoutedEventArgs e)
+        private void Extract()
         {
+            if (!btnExtract.IsEnabled)
+            {
+                return;
+            }
+
             PauseMedia();
 
             SaveFileDialog saveFileDialog = new SaveFileDialog();
@@ -457,6 +466,11 @@ namespace player
 
                 MessageBox.Show("Saved.");
             }
+        }
+
+        private void btnExtract_Click(object sender, RoutedEventArgs e)
+        {
+            Extract();
         }
 
         private Bitmap mergeImage(System.Drawing.Image bottom, System.Drawing.Image front, double opacity)
