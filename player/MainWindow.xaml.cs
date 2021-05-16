@@ -113,7 +113,12 @@ namespace player
             //heatmapIntensity.IsEnabled = true;
             //heatmapRadius.IsEnabled = true;
 
-            this.heatmap.Source = mouseDecorder.GetHeatmap(TimeSpan.Zero);
+            UpdateHeatmap();
+        }
+
+        private void UpdateHeatmap()
+        {
+            this.heatmap.Source = mouseDecorder.GetHeatmap(mediaElement.Position);            
         }
 
         enum MediaStatusEnum
@@ -327,7 +332,8 @@ namespace player
                 // if timeline value is decrase, re-plot heatmap using startLine time information.
                 mouseDecorder.SetStartTime(TimeSpan.FromTicks((long)startLine.Value * TimeSpan.TicksPerMillisecond));
             }
-            heatmap.Source = mouseDecorder.GetHeatmap(timeSpan);
+
+            UpdateHeatmap();
 
             if (e.NewValue < startLine.Value)
             {
@@ -350,8 +356,13 @@ namespace player
             
             // Changing starting timespan of mouseDecorder
             mouseDecorder.SetStartTime(timeSpan);
-            
-            timeline.Value = startLine.Value;
+
+            if (startLine.Value > timeline.Value)
+            {
+                timeline.Value = startLine.Value;
+            }
+
+            UpdateHeatmap();
         }
 
         private void startLine_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
@@ -433,6 +444,7 @@ namespace player
             if (mouseDecorder != null)
             {
                 mouseDecorder.HeatmapRadius = (int)e.NewValue;
+                UpdateHeatmap();
             }
         }
 
@@ -441,6 +453,7 @@ namespace player
             if (mouseDecorder != null)
             {
                 mouseDecorder.HeatmapIntensity = (byte)e.NewValue;
+                UpdateHeatmap();
             }
         }
 
