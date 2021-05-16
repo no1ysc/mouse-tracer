@@ -89,60 +89,82 @@
                     VerticalAlignment="Center"
                     Content="00:00:00.000" />
                 </StackPanel>
-                <StackPanel
-                    Orientation="Horizontal">
-                    <Label
-                    Margin="5 0 0 0"
-                    VerticalAlignment="Center"
-                    Content="Play Speed:" />
-                    <Label
-                    Name="strPlaySpeed"
-                    VerticalAlignment="Center"
-                    Content="1.0" />
-                </StackPanel>
             </StackPanel>
-            <StackPanel
-                Grid.Column="1"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Margin="5"
-                Orientation="Horizontal">
-                <StackPanel.Resources>
-                    <Style TargetType="Button">
-                        <Setter Property="Margin" Value="2" />
-                    </Style>
-                </StackPanel.Resources>
-                <Button Name="loadButton"
+            <Grid
+                Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel
+                    Grid.Row="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="5"
+                    Orientation="Horizontal">
+                    <StackPanel.Resources>
+                        <Style TargetType="Button">
+                            <Setter Property="Margin" Value="2" />
+                        </Style>
+                    </StackPanel.Resources>
+                    <Button Name="loadButton"
                     Margin="5 0 0 0"
                     Padding="5"
                     Height="30"
                     Content="Open File" />
-                <Button Name="playButton">
-                    <Image Source="Image/play.png"/>
-                </Button>
-                <Button x:Name="pauseButton"
+                    <Button Name="playButton">
+                        <Image Source="Image/play.png"/>
+                    </Button>
+                    <Button x:Name="pauseButton"
                     IsEnabled="False"
                     Opacity="0.5">
-                    <Image Source="Image/pause.png" />
-                </Button>
-                <Button x:Name="stopButton">
-                    <Image Source="Image/stop.png" />
-                </Button>
-                <Label Width="5" />
-                <Button Name="slowerButton">
-                    <Image Source="Image/slower.png" />
-                </Button>
-                <Button x:Name="fasterButton">
-                    <Image Source="Image/faster.png" />
-                </Button>
-                <Button x:Name="btnExtract"
+                        <Image Source="Image/pause.png" />
+                    </Button>
+                    <Button x:Name="stopButton">
+                        <Image Source="Image/stop.png" />
+                    </Button>
+                    <Label Width="5" />
+                    <Button Name="slowerButton">
+                        <Image Source="Image/slower.png" />
+                    </Button>
+                    <Button x:Name="fasterButton">
+                        <Image Source="Image/faster.png" />
+                    </Button>
+                    <Button x:Name="btnExtract"
                     Margin="5 0 0 0"
                     Padding="5"
                     Height="30"
                     Content="Extract"
                     Click="btnExtract_Click"
                         />
-            </StackPanel>
+                </StackPanel>
+                <StackPanel
+                    Grid.Row="1"
+                    Orientation="Horizontal">
+                    <StackPanel
+                    Orientation="Horizontal">
+                        <Label
+                    Margin="5 0 0 0"
+                    VerticalAlignment="Center"
+                    Content="Play Speed:" />
+                        <Label
+                    Name="strPlaySpeed"
+                    VerticalAlignment="Center"
+                    Content="1.0" />
+                    </StackPanel>
+                    <StackPanel
+                    Orientation="Horizontal">
+                        <Label
+                    Margin="5 0 0 0"
+                    VerticalAlignment="Center"
+                    Content="Mouse Offset:" />
+                        <Label
+                    Name="strTimespanOffset"
+                    VerticalAlignment="Center"
+                    Content="1.0" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
             <StackPanel
                 Grid.Column="2"
                 Margin="5"
@@ -177,7 +199,7 @@
                     Margin="5 0 0 0"
                     VerticalAlignment="Center"
                     Content="Intensity: " />
-                    
+
                     <Slider
                         Grid.Column="1"
                         IsEnabled="False"

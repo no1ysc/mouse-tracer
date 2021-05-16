@@ -461,6 +461,32 @@ namespace player
                     Extract();
                     e.Handled = true;
                     return;
+                case Key.S:
+                    timeline.Value = startLine.Value;
+                    e.Handled = true;
+                    return;
+                case Key.T:
+                    startLine.Value = timeline.Value;
+                    e.Handled = true;
+                    return;
+                case Key.X:
+                    if (MediaStatus == MediaStatusEnum.Playing || MediaStatus == MediaStatusEnum.Paused)
+                    {
+                        mouseDecorder.TimeSpanOffset += TimeSpan.FromMilliseconds(200);
+                        strTimespanOffset.Content = timespanToString(mouseDecorder.TimeSpanOffset);
+                        UpdateHeatmap();
+                    }
+                    e.Handled = true;
+                    return;
+                case Key.Z:
+                    if (MediaStatus == MediaStatusEnum.Playing || MediaStatus == MediaStatusEnum.Paused)
+                    {
+                        mouseDecorder.TimeSpanOffset -= TimeSpan.FromMilliseconds(200);
+                        strTimespanOffset.Content = timespanToString(mouseDecorder.TimeSpanOffset);
+                        UpdateHeatmap();
+                    }
+                    e.Handled = true;
+                    return;
                 default:
                     return;
             }

@@ -48,6 +48,21 @@ namespace player
         private int Width;
         private int Height;
 
+        private TimeSpan timeSpanOffset = TimeSpan.Zero;
+        public TimeSpan TimeSpanOffset
+        {
+            get
+            {
+                return timeSpanOffset;
+            }
+            set
+            {
+                timeSpanOffset = value;
+                HeatPoints.Clear();
+                latestHeatmapTime = this.startTime;
+            }
+        }
+
         private int heatmapRadius = Properties.Settings.Default.heatmapRadius;
         public int HeatmapRadius
         {
@@ -124,7 +139,7 @@ namespace player
         public void savePartialMtr(string filePath)
         {
             StreamWriter streamWriter = new StreamWriter(filePath);
-            var processing = data.Where(d => d.timeSpan > startTime && d.timeSpan <= latestHeatmapTime);
+            var processing = data.Where(d => d.timeSpan > startTime + TimeSpanOffset && d.timeSpan <= latestHeatmapTime + TimeSpanOffset);
 
             foreach (var process in processing)
             {
@@ -145,7 +160,7 @@ namespace player
 
         internal BitmapImage GetHeatmap(TimeSpan position)
         {
-            var processing = data.Where(d => d.timeSpan > latestHeatmapTime && d.timeSpan <= position).Where(d2 => d2.mouseEvent == MouseEvent.Move);
+            var processing = data.Where(d => d.timeSpan > latestHeatmapTime + TimeSpanOffset && d.timeSpan <= position + TimeSpanOffset).Where(d2 => d2.mouseEvent == MouseEvent.Move);
 
             foreach(var process in processing)
             {
