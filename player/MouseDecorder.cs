@@ -48,7 +48,7 @@ namespace player
         private int Width;
         private int Height;
 
-        private int heatmapRadius = 15;
+        private int heatmapRadius = Properties.Settings.Default.heatmapRadius;
         public int HeatmapRadius
         {
             get 
@@ -60,6 +60,8 @@ namespace player
                 HeatPoints.Clear();
                 latestHeatmapTime = this.startTime;
                 heatmapRadius = value;
+                Properties.Settings.Default["heatmapRadius"] = heatmapRadius;
+                Properties.Settings.Default.Save();
             }
         }
         static public int HeatmapRadiusMin
@@ -72,7 +74,8 @@ namespace player
             get;
         } = 150;
 
-        private byte heatmapIntensity = 80;
+        //private byte heatmapIntensity = 80;
+        private byte heatmapIntensity = Properties.Settings.Default.heatmapIntensity;
         public byte HeatmapIntensity
         {
             get
@@ -84,6 +87,8 @@ namespace player
                 HeatPoints.Clear();
                 latestHeatmapTime = this.startTime;
                 heatmapIntensity = value;
+                Properties.Settings.Default["heatmapIntensity"] = heatmapIntensity;
+                Properties.Settings.Default.Save();
             }
         }
 
