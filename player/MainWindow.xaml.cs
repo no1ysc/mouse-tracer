@@ -55,7 +55,14 @@ namespace player
 
         private string timespanToString(TimeSpan timespan)
         {
-            return string.Format("{0:D2}:{1:D2}:{2:D2}.{3:D3}", timespan.Hours, timespan.Minutes, timespan.Seconds, timespan.Milliseconds);
+            if (timespan.Ticks < 0)
+            {
+                return string.Format("-{0:D2}:{1:D2}:{2:D2}.{3:D3}", Math.Abs(timespan.Hours), Math.Abs(timespan.Minutes), Math.Abs(timespan.Seconds), Math.Abs(timespan.Milliseconds));
+            }
+            else
+            {
+                return string.Format("{0:D2}:{1:D2}:{2:D2}.{3:D3}", timespan.Hours, timespan.Minutes, timespan.Seconds, timespan.Milliseconds);
+            }
         }
 
         private bool IsFromDispatcher = false;
