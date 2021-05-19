@@ -530,15 +530,26 @@ namespace player
             saveFileDialog.InitialDirectory = recentOpenedPath;
             if (saveFileDialog.ShowDialog() == true)
             {
+                mouseDecorder.savePartialMtr(saveFileDialog.FileName + ".mtr");
+                SaveTimeInformation(saveFileDialog.FileName + ".ti");
                 System.Drawing.Image heatmap = mouseDecorder.saveCurrentHeatmap(saveFileDialog.FileName + "-heatmap.png");
                 ConvertUiElementToBitmap(this.mediaElement, saveFileDialog.FileName + "-player.png");
-                mouseDecorder.savePartialMtr(saveFileDialog.FileName + ".mtr");
-                mouseDecorder.savePartialMtr(saveFileDialog.FileName + ".mtr");
                 ConvertUiElementToBitmap(this, saveFileDialog.FileName + "-capture.png");
                 mergeImage(System.Drawing.Image.FromFile(saveFileDialog.FileName + "-player.png"), heatmap, 0.5).Save(saveFileDialog.FileName + ".png");
 
                 MessageBox.Show("Saved.");
             }
+        }
+
+        public void SaveTimeInformation(string filePath)
+        {
+            StreamWriter streamWriter = new StreamWriter(filePath);
+            
+            streamWriter.WriteLine($"startTimeMs;{startLine.Value}");
+            streamWriter.WriteLine($"endTimeMs;{timeline.Value}");
+            streamWriter.WriteLine($"mouseOffset;{mouseDecorder.TimeSpanOffset}");
+
+            streamWriter.Close();
         }
 
         private void btnExtract_Click(object sender, RoutedEventArgs e)

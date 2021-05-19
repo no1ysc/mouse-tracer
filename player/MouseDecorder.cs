@@ -122,23 +122,12 @@ namespace player
             Width = width;
             Height = height;
             string[] lines = System.IO.File.ReadAllLines(fileName);
-            for (int i = 0; i < lines.Length - 2; i++)
-            {
-                string[] rows = Regex.Split(lines[i], ", ");
-                data.Add(new MouseEventPoint(rows[0], rows[1], rows[2], rows[3]));
-            }
 
-            // treat for last line
-            string[] lastRows = Regex.Split(lines[lines.Length - 1], ", ");
-            if (lastRows.Length < 4)
+            foreach(string line in lines)
             {
-                // if last line is timespan offset information,
-                TimeSpanOffset = TimeSpan.Parse(lastRows[0]);
-            }
-            else
-            {
-                data.Add(new MouseEventPoint(lastRows[0], lastRows[1], lastRows[2], lastRows[3]));
-                TimeSpanOffset = TimeSpan.Zero;
+                string[] rows = Regex.Split(line, ", ");
+                
+                data.Add(new MouseEventPoint(rows[0], rows[1], rows[2], rows[3]));
             }
         }
 
@@ -158,7 +147,6 @@ namespace player
             {
                 streamWriter.WriteLine(process);
             }
-            streamWriter.WriteLine(TimeSpanOffset);
 
             streamWriter.Close();
         }
