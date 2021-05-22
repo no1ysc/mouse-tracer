@@ -83,10 +83,10 @@ namespace recorder
             vfw.Height = Screen.PrimaryScreen.Bounds.Height;
             vfw.VideoCodec = VideoCodec.H264;
             vfw.VideoOptions["crf"] = "18"; // visually lossless
-            vfw.VideoOptions["preset"] = "medium";
-            vfw.VideoOptions["tune"] = "animation";
+            vfw.VideoOptions["preset"] = "fast";
+            //vfw.VideoOptions["tune"] = "animation";
             vfw.VideoOptions["x264opts"] = "no-mbtree:sliced-threads:sync-lookahead=0";
-            vfw.VideoOptions["flush_packets"] = "1";
+            //vfw.VideoOptions["flush_packets"] = "1";
 
             if (audioMixer != null)
             {
@@ -151,13 +151,15 @@ namespace recorder
             }
         }
 
+        private Graphics g;
         private void ScreenStream_NewFrame(object sender, Accord.Video.NewFrameEventArgs eventArgs)
         {
-            //g = Graphics.FromImage(eventArgs.Frame);
-            //g.DrawIcon(Properties.Resources.mouse, mem.CurrentX, mem.CurrentY);
+            g = Graphics.FromImage(eventArgs.Frame);
+            g.DrawIcon(Properties.Resources.mouse, mem.CurrentX, mem.CurrentY);
             //lastFrame = null;
             //lastFrame = eventArgs.Frame.Clone(new Rectangle(0, 0, eventArgs.Frame.Width, eventArgs.Frame.Height), eventArgs.Frame.PixelFormat);
             //pictureBox1.Image = lastFrame;
+            //g.Dispose();
 
             DateTime currentFrameTime = eventArgs.CaptureFinished;
 
