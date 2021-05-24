@@ -145,5 +145,11 @@
       <Version>2.4.5</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\common\common.csproj">
+      <Project>{8d548d81-fa9b-4fa8-add0-f33a27d660fc}</Project>
+      <Name>common</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -5,174 +5,99 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
-namespace player
+namespace analyser
 {
-    public class MouseDecorder
-    {
-        private TimeSpan startTime = TimeSpan.Zero;
-        private TimeSpan latestHeatmapTime = TimeSpan.Zero;
-
-        private List<MouseEventPoint> data = new List<MouseEventPoint>();
-        private int Width;
-        private int Height;
-
-        private TimeSpan timeSpanOffset = TimeSpan.Zero;
-        public TimeSpan TimeSpanOffset
+    internal class HeatMap
+    { 
+        public struct HeatPoint
         {
-            get
+            public int X;
+            public int Y;
+            public byte Intensity;
+            public HeatPoint(int iX, int iY, byte bIntensity)
             {
-                return timeSpanOffset;
-            }
-            set
-            {
-                timeSpanOffset = value;
-                HeatPoints.Clear();
-                latestHeatmapTime = this.startTime;
+                X = iX;
+                Y = iY;
+                Intensity = bIntensity;
             }
         }
 
-        private int heatmapRadius = Properties.Settings.Default.heatmapRadius;
-        public int HeatmapRadius
+        public HeatMap(DataContainer dataContainer, string saveRootPath)
         {
-            get 
-            {
-                return heatmapRadius;
-            }
-            set
-            {
-                HeatPoints.Clear();
-                latestHeatmapTime = this.startTime;
-                heatmapRadius = value;
-                Properties.Settings.Default["heatmapRadius"] = heatmapRadius;
-                Properties.Settings.Default.Save();
-            }
-        }
-        static public int HeatmapRadiusMin
-        {
-            get;
-        } = 5;
-
-        static public int HeatmapRadiusMax
-        {
-            get;
-        } = 150;
-
-        //private byte heatmapIntensity = 80;
-        private byte heatmapIntensity = Properties.Settings.Default.heatmapIntensity;
-        public byte HeatmapIntensity
-        {
-            get
-            {
-                return heatmapIntensity;
-            }
-            set
-            {
-                HeatPoints.Clear();
-                latestHeatmapTime = this.startTime;
-                heatmapIntensity = value;
-                Properties.Settings.Default["heatmapIntensity"] = heatmapIntensity;
-                Properties.Settings.Default.Save();
-            }
+            DataContainer = dataContainer;
+            SaveRootPath = saveRootPath;
         }
 
-        static public byte HeatmapIntensityMin
-        {
-            get;
-        } = 10;
+        public string SaveRootPath { get; set; }
 
-        static public byte HeatmapIntensityMax
-        {
-            get;
-        } = 255;
+        public DataContainer DataContainer { get; }
 
-        public MouseDecorder(string fileName, int width, int height)
-        {
-            Width = width;
-            Height = height;
-            string[] lines = System.IO.File.ReadAllLines(fileName);
+        public byte Intensity { get; private set; }
+        public int Radius { get; private set; }
 
-            foreach(string line in lines)
+        public Dictionary<string, Image> Results { get; private set; } = new Dictionary<string, Image>();
+
+        internal void Create(byte intensity, int radius, int width, int height)
+        {
+            Intensity = intensity;
+            Radius = radius;
+
+            for (int q = 0; q < 18; q++)
             {
-                string[] rows = Regex.Split(line, ", ");
-                
-                data.Add(new MouseEventPoint(rows[0], rows[1], rows[2], rows[3]));
+                for (int s = 0; s < 5; s++)
+                {
+                    List<HeatPoint> heatPoints = new List<HeatPoint>();
+
+                    for (int u = 0; u < 22; u++)
+                    {
+                        MouseTraceData current = null;
+                        try
+                        {
+                            current = DataContainer.MouseTraces[$"{string.Format("{0:0,0}", u + 1)}"][$"{q + 1}"][$"{s + 1}"];
+                        } 
+                        catch (Exception e)
+                        {
+                            Console.WriteLine($"{e.Message}: { u + 1},{ q + 1},{ s + 1}");
+                            continue;
+                        }
+                        finally
+                        {
+                            if (current != null)
+                            {
+                                foreach(var data in current.InputData)
+                                {
+                                    heatPoints.Add(new HeatPoint(data.x, data.y, Intensity));
+                                }
+                            }
+                        }
+                    }
+
+                    Image sectionResult = createHeatmap(width, height, heatPoints);
+                    string sectionName = $"{q + 1}-{s + 1}";
+                    Results.Add(sectionName, sectionResult);
+
+                    sectionResult.Save(Path.Combine(SaveRootPath, $"{sectionName}.png"));
+                }
             }
         }
 
-        public void SetStartTime(TimeSpan timeSpan)
+        public void save(string rootPath)
         {
-            HeatPoints.Clear();
-            this.startTime = timeSpan;
-            latestHeatmapTime = this.startTime;
-        }
-
-        public void savePartialMtr(string filePath)
-        {
-            StreamWriter streamWriter = new StreamWriter(filePath);
-            var processing = data.Where(d => d.timeSpan > startTime + TimeSpanOffset && d.timeSpan <= latestHeatmapTime + TimeSpanOffset);
-
-            foreach (var process in processing)
+            foreach(var image in Results)
             {
-                streamWriter.WriteLine(process);
-            }
-
-            streamWriter.Close();
-        }
-
-        internal Image saveCurrentHeatmap(string filePath)
-        {
-            Image image = createHeatmap();
-
-            image.Save(filePath, ImageFormat.Png);
-
-            return image;
-        }
-
-        internal BitmapImage GetHeatmap(TimeSpan position)
-        {
-            var processing = data.Where(d => d.timeSpan > latestHeatmapTime + TimeSpanOffset && d.timeSpan <= position + TimeSpanOffset).Where(d2 => d2.mouseEvent == MouseEvent.Move);
-
-            foreach(var process in processing)
-            {
-                HeatPoints.Add(new HeatPoint(process.x, process.y, HeatmapIntensity));
-            }
-            
-
-            using (var memory = new System.IO.MemoryStream())
-            {
-                createHeatmap().Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                memory.Position = 0;
-
-                var bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze();
-
-                latestHeatmapTime = position;
-
-                return bitmapImage;
+                image.Value.Save(Path.Combine(rootPath, $"{image.Key}.png"));
             }
         }
 
-        private List<HeatPoint> HeatPoints = new List<HeatPoint>();
-
-        private Image createHeatmap()
+        private Image createHeatmap(int width, int height, List<HeatPoint> heatPoints)
         {
             // Create new memory bitmap the same size as the picture box
-            Bitmap bMap = new Bitmap(Width, Height);
-            
+            Bitmap bMap = new Bitmap(width, height);
+
             // Call CreateIntensityMask, give it the memory bitmap, and store the result back in the memory bitmap
-            bMap = CreateIntensityMask(bMap, HeatPoints);
-            
+            bMap = CreateIntensityMask(bMap, heatPoints);
+
             // Colorize the memory bitmap and assign it as the picture boxes image
             return Colorize(bMap, 255);
         }
@@ -186,7 +111,7 @@ namespace player
             foreach (HeatPoint DataPoint in aHeatPoints)
             {
                 // Render current heat point on draw surface
-                DrawHeatPoint(DrawSurface, DataPoint, HeatmapRadius);
+                DrawHeatPoint(DrawSurface, DataPoint, Radius);
             }
             return bSurface;
         }
@@ -279,22 +204,9 @@ namespace player
             {
                 OutputMap[X] = new ColorMap();
                 OutputMap[X].OldColor = System.Drawing.Color.FromArgb(X, X, X);
-                OutputMap[X].NewColor = System.Drawing.Color.FromArgb(Alpha, libColor[X][0], libColor[X][1], libColor[X][2]) ;
+                OutputMap[X].NewColor = System.Drawing.Color.FromArgb(Alpha, libColor[X][0], libColor[X][1], libColor[X][2]);
             }
             return OutputMap;
-        }
-    }
-
-    public struct HeatPoint
-    {
-        public int X;
-        public int Y;
-        public byte Intensity;
-        public HeatPoint(int iX, int iY, byte bIntensity)
-        {
-            X = iX;
-            Y = iY;
-            Intensity = bIntensity;
         }
     }
 }
