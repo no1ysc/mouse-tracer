@@ -8,6 +8,18 @@ using System.Threading.Tasks;
 
 namespace analyser
 {
+    public struct DataId
+    {
+        public string UserName { get; set; }
+        public string QuestionName { get; set; }
+        public string SectionName { get; set; }
+
+        public override string ToString()
+        {
+            return $"UserName: { UserName }, QuestionName: {QuestionName}, SectionName: {SectionName}";
+        }
+    }
+
     public class DataContainer
     {
         public DataContainer(TimeSpan restTimePerEvent)
@@ -21,12 +33,19 @@ namespace analyser
         /// UserName, QuestionName, SectionName
         /// </summary>
         public Dictionary<string, Dictionary<string, Dictionary<string, MouseTraceData>>> MouseTraces { get; private set; } = new Dictionary<string, Dictionary<string, Dictionary<string, MouseTraceData>>>();
-        
+        public MouseTraceData GetMouseTraceItem(DataId dataId)
+        {
+            return MouseTraces[dataId.UserName][dataId.QuestionName][dataId.SectionName];
+        }
 
         /// <summary>
         /// UserName, QuestionName, SectionName
         /// </summary>
         public Dictionary<string, Dictionary<string, Dictionary<string, TimeInformation>>> TimeInformations { get; private set; } = new Dictionary<string, Dictionary<string, Dictionary<string, TimeInformation>>>();
+        public TimeInformation GetTimeInformationItem(DataId dataId)
+        {
+            return TimeInformations[dataId.UserName][dataId.QuestionName][dataId.SectionName];
+        }
 
         private void readFromMouseTraceRecordFiles(string userName, FileInfo[] files)
         {

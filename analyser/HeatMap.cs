@@ -38,6 +38,45 @@ namespace analyser
 
         public Dictionary<string, Image> Results { get; private set; } = new Dictionary<string, Image>();
 
+        internal void Create(byte intensity, int radius, int width, int height, Dictionary<string, List<DataId>> targetItems)
+        {
+            Intensity = intensity;
+            Radius = radius;
+
+            foreach(var item in targetItems)
+            {
+                List<HeatPoint> heatPoints = new List<HeatPoint>();
+
+                foreach(var dataId in item.Value)
+                {
+                    MouseTraceData current = null;
+                    try
+                    {
+                        current = DataContainer.GetMouseTraceItem(dataId);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"{e.Message}: {dataId}");
+                        continue;
+                    }
+                    finally
+                    {
+                        if (current != null)
+                        {
+                            foreach (var data in current.InputData)
+                            {
+                                heatPoints.Add(new HeatPoint(data.x, data.y, Intensity));
+                            }
+                        }
+                    }
+                }
+
+                Image sectionResult = createHeatmap(width, height, heatPoints);
+
+                sectionResult.Save(Path.Combine(SaveRootPath, $"{item.Key}.png"));
+            }
+        }
+
         internal void Create(byte intensity, int radius, int width, int height)
         {
             Intensity = intensity;
